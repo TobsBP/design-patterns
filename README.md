@@ -10,7 +10,7 @@ Os padrões estão organizados em três categorias: **Criacionais**, **Estrutura
 
 Lidam com mecanismos de criação de objetos, aumentando a flexibilidade e o reuso do código existente.
 
-- [x] [Singleton](./singleton/) — Garante que uma classe tenha apenas uma instância e fornece um ponto de acesso global a ela.
+- [x] [Singleton](./creational/singleton/) — Garante que uma classe tenha apenas uma instância e fornece um ponto de acesso global a ela.
 - [ ] Factory Method — Define uma interface para criar objetos, mas deixa as subclasses decidirem quais classes instanciar.
 - [ ] Abstract Factory — Permite produzir famílias de objetos relacionados sem especificar suas classes concretas.
 - [ ] Builder — Permite construir objetos complexos passo a passo.
