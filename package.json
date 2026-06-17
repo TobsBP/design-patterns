@@ -12,5 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.22.4"
   }
 }
