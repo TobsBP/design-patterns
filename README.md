@@ -13,7 +13,7 @@ Lidam com mecanismos de criação de objetos, aumentando a flexibilidade e o reu
 - [x] [Singleton](./creational/singleton/) — Garante que uma classe tenha apenas uma instância e fornece um ponto de acesso global a ela.
 - [ ] Factory Method — Define uma interface para criar objetos, mas deixa as subclasses decidirem quais classes instanciar.
 - [ ] Abstract Factory — Permite produzir famílias de objetos relacionados sem especificar suas classes concretas.
-- [ ] Builder — Permite construir objetos complexos passo a passo.
+- [x] Builder — Permite construir objetos complexos passo a passo.
 - [ ] Prototype — Permite copiar objetos existentes sem tornar o código dependente de suas classes.
 
 ---
