@@ -43,7 +43,7 @@ Cuidam da comunicação eficiente e da atribuição de responsabilidades entre o
 - [ ] Memento — Permite salvar e restaurar o estado anterior de um objeto sem revelar detalhes de sua implementação.
 - [ ] Observer — Define um mecanismo de assinatura para notificar múltiplos objetos sobre eventos que aconteçam com o objeto observado.
 - [ ] State — Permite que um objeto altere seu comportamento quando seu estado interno muda.
-- [ ] Strategy — Define uma família de algoritmos, encapsula cada um deles e os torna intercambiáveis.
+- [x] [Strategy](./behavioral/strategy/) — Define uma família de algoritmos, encapsula cada um deles e os torna intercambiáveis.
 - [ ] Template Method — Define o esqueleto de um algoritmo na superclasse, permitindo que subclasses sobrescrevam etapas específicas.
 - [ ] Visitor — Permite separar algoritmos dos objetos nos quais eles operam.
 
