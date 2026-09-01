@@ -22,7 +22,7 @@ Lidam com mecanismos de criação de objetos, aumentando a flexibilidade e o reu
 
 Explicam como montar objetos e classes em estruturas maiores, mantendo essas estruturas flexíveis e eficientes.
 
-- [ ] Adapter — Permite que objetos com interfaces incompatíveis colaborem entre si.
+- [x] [Adapter](./structural/adapter/) — Permite que objetos com interfaces incompatíveis colaborem entre si.
 - [ ] Bridge — Divide uma classe grande ou um conjunto de classes intimamente relacionadas em duas hierarquias separadas.
 - [ ] Composite — Permite compor objetos em estruturas de árvore e trabalhar com essas estruturas como se fossem objetos individuais.
 - [ ] Decorator — Permite adicionar novos comportamentos a objetos colocando-os dentro de invólucros que contêm esses comportamentos.
