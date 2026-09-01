@@ -41,7 +41,7 @@ Cuidam da comunicação eficiente e da atribuição de responsabilidades entre o
 - [ ] Iterator — Permite percorrer elementos de uma coleção sem expor sua representação subjacente.
 - [ ] Mediator — Reduz dependências caóticas entre objetos, restringindo comunicações diretas e forçando colaboração via mediador.
 - [ ] Memento — Permite salvar e restaurar o estado anterior de um objeto sem revelar detalhes de sua implementação.
-- [ ] Observer — Define um mecanismo de assinatura para notificar múltiplos objetos sobre eventos que aconteçam com o objeto observado.
+- [x] [Observer](./behavioral/observer/) — Define um mecanismo de assinatura para notificar múltiplos objetos sobre eventos que aconteçam com o objeto observado.
 - [ ] State — Permite que um objeto altere seu comportamento quando seu estado interno muda.
 - [x] [Strategy](./behavioral/strategy/) — Define uma família de algoritmos, encapsula cada um deles e os torna intercambiáveis.
 - [ ] Template Method — Define o esqueleto de um algoritmo na superclasse, permitindo que subclasses sobrescrevam etapas específicas.
