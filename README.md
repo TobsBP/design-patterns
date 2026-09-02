@@ -28,7 +28,7 @@ Explicam como montar objetos e classes em estruturas maiores, mantendo essas est
 - [ ] Decorator — Permite adicionar novos comportamentos a objetos colocando-os dentro de invólucros que contêm esses comportamentos.
 - [x] [Facade](./structural/facade/) — Fornece uma interface simplificada para uma biblioteca, um framework ou qualquer conjunto complexo de classes.
 - [ ] Flyweight — Permite acomodar mais objetos na quantidade de RAM disponível ao compartilhar partes comuns do estado.
-- [ ] Proxy — Fornece um substituto ou espaço reservado para outro objeto, controlando o acesso a ele.
+- [x] [Proxy](./structural/proxy/) — Fornece um substituto ou espaço reservado para outro objeto, controlando o acesso a ele.
 
 ---
 
