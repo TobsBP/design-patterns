@@ -42,9 +42,9 @@ Cuidam da comunicação eficiente e da atribuição de responsabilidades entre o
 - [x] [Mediator](./behavioral/mediator/) — Reduz dependências caóticas entre objetos, restringindo comunicações diretas e forçando colaboração via mediador.
 - [x] [Memento](./behavioral/memento/) — Permite salvar e restaurar o estado anterior de um objeto sem revelar detalhes de sua implementação.
 - [x] [Observer](./behavioral/observer/) — Define um mecanismo de assinatura para notificar múltiplos objetos sobre eventos que aconteçam com o objeto observado.
-- [ ] State — Permite que um objeto altere seu comportamento quando seu estado interno muda.
+- [x] [State](./behavioral/state/) — Permite que um objeto altere seu comportamento quando seu estado interno muda.
 - [x] [Strategy](./behavioral/strategy/) — Define uma família de algoritmos, encapsula cada um deles e os torna intercambiáveis.
-- [ ] Template Method — Define o esqueleto de um algoritmo na superclasse, permitindo que subclasses sobrescrevam etapas específicas.
+- [x] [Template Method](./behavioral/template-method/) — Define o esqueleto de um algoritmo na superclasse, permitindo que subclasses sobrescrevam etapas específicas.
 - [ ] Visitor — Permite separar algoritmos dos objetos nos quais eles operam.
 
 ---

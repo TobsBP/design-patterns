@@ -22,11 +22,14 @@ import { AnalyticsObserver } from "@repo/behavioral/observer/src/AnalyticsObserv
 import { EmailObserver } from "@repo/behavioral/observer/src/EmailObserver";
 import { InvoiceObserver } from "@repo/behavioral/observer/src/InvoiceObserver";
 import { OrderService } from "@repo/behavioral/observer/src/OrderService";
+import { Order } from "@repo/behavioral/state/src/Order";
 import { ExpressShipping } from "@repo/behavioral/strategy/src/ExpressShipping";
 import type { IShippingStrategy } from "@repo/behavioral/strategy/src/IShippingStrategy";
 import { PickupShipping } from "@repo/behavioral/strategy/src/PickupShipping";
 import { ShippingCalculator } from "@repo/behavioral/strategy/src/ShippingCalculator";
 import { StandardShipping } from "@repo/behavioral/strategy/src/StandardShipping";
+import { CsvCatalogImporter } from "@repo/behavioral/template-method/src/CsvCatalogImporter";
+import { JsonCatalogImporter } from "@repo/behavioral/template-method/src/JsonCatalogImporter";
 import { BrazilCheckoutFactory } from "@repo/creational/abstract-factory/src/BrazilCheckoutFactory";
 import { Checkout } from "@repo/creational/abstract-factory/src/Checkout";
 import { UsaCheckoutFactory } from "@repo/creational/abstract-factory/src/UsaCheckoutFactory";
@@ -70,6 +73,8 @@ export const DEMOS: Record<string, () => React.ReactElement> = {
   command: CommandDemo,
   iterator: IteratorDemo,
   mediator: MediatorDemo,
+  state: StateDemo,
+  "template-method": TemplateMethodDemo,
   factory: FactoryDemo,
   builder: BuilderDemo,
   singleton: SingletonDemo,
@@ -528,6 +533,107 @@ function MediatorDemo() {
           `botão: ${form.button.enabled ? "habilitado" : `desabilitado — ${form.button.reason}`}`,
         ].join("\n"),
       }}
+    />
+  );
+}
+
+function StateDemo() {
+  const [order, setOrder] = useState(() => new Order("ord-901"));
+  const [logs, setLogs] = useState<string[]>([]);
+  const [, setTick] = useState(0);
+
+  const act = (fn: (order: Order) => void) => {
+    const run = capture(() => fn(order));
+    setLogs((current) => [...current, ...run.logs.map((line) => line.text)].slice(-5));
+    setTick((n) => n + 1);
+  };
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Field label="Ações no pedido">
+            <div className="flex flex-wrap gap-1.5">
+              <Action tone="ghost" onClick={() => act((o) => o.pay())}>
+                pagar
+              </Action>
+              <Action tone="ghost" onClick={() => act((o) => o.ship())}>
+                enviar
+              </Action>
+              <Action tone="ghost" onClick={() => act((o) => o.deliver())}>
+                entregar
+              </Action>
+              <Action tone="ghost" onClick={() => act((o) => o.cancel())}>
+                cancelar
+              </Action>
+            </div>
+          </Field>
+          <Action
+            onClick={() => {
+              setOrder(new Order(`ord-${Math.floor(Math.random() * 900 + 100)}`));
+              setLogs([]);
+            }}
+          >
+            Novo pedido
+          </Action>
+        </>
+      }
+      run={{
+        logs: logs.map((text) => ({ kind: "log" as const, text })),
+        result: [`status: ${order.status}`, `histórico: ${order.history.join(" → ")}`].join("\n"),
+      }}
+    />
+  );
+}
+
+const CSV_SAMPLE = `sku,name,price
+LIVRO-DDD, Livro DDD , 129.00
+TECLADO-HHKB, Teclado HHKB, 2450.00
+, Sem sku, 10.00
+MOUSEPAD, Mousepad XL, 0`;
+
+const JSON_SAMPLE = JSON.stringify({
+  items: [
+    { sku: "HEADSET", name: "Headset", price: "20000" },
+    { sku: "MONITOR-4K", name: "Monitor 4K", price: "180000" },
+  ],
+});
+
+function TemplateMethodDemo() {
+  const [run, setRun] = useRun();
+  const [format, setFormat] = useState("csv");
+
+  const load = () =>
+    setRun(
+      capture(() => {
+        const report =
+          format === "csv"
+            ? new CsvCatalogImporter().run(CSV_SAMPLE)
+            : new JsonCatalogImporter().run(JSON_SAMPLE);
+
+        return report.products
+          .map((product) => `${product.sku} — ${money(product.priceInCents)}`)
+          .join("\n");
+      }),
+    );
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Choice
+            label="Fornecedor"
+            value={format}
+            onChange={setFormat}
+            options={[
+              { value: "csv", label: "CsvCatalogImporter" },
+              { value: "json", label: "JsonCatalogImporter" },
+            ]}
+          />
+          <Action onClick={load}>Importar catálogo</Action>
+        </>
+      }
+      run={run}
     />
   );
 }
