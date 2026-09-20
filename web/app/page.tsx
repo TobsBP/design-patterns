@@ -95,9 +95,18 @@ function Row({ pattern }: { pattern: Pattern }) {
         className="absolute left-0 top-0 h-full w-px scale-y-0 bg-[var(--family)] transition-transform duration-200 ease-[var(--ease-out)] group-hover:scale-y-100"
       />
       {body}
-      <span className="font-display text-xs text-[var(--family)] opacity-0 transition-opacity duration-200 group-hover:opacity-100 sm:ml-auto sm:shrink-0">
-        abrir
-      </span>
+      <svg
+        aria-hidden
+        viewBox="0 0 14 14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-3.5 w-3.5 shrink-0 text-[var(--family)] opacity-0 transition-[opacity,transform] duration-200 ease-[var(--ease-out)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-100 sm:ml-auto"
+      >
+        <path d="M4 10 10 4M4.75 4H10v5.25" />
+      </svg>
     </Link>
   );
 }
