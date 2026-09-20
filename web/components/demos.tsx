@@ -22,6 +22,12 @@ import type { IPaymentProcessor } from "@repo/structural/adapter/src/IPaymentPro
 import { PaypalAdapter } from "@repo/structural/adapter/src/PaypalAdapter";
 
 import { StripeProcessor } from "@repo/structural/adapter/src/StripeProcessor";
+import { CsvRenderer } from "@repo/structural/bridge/src/CsvRenderer";
+import { InventoryReport } from "@repo/structural/bridge/src/InventoryReport";
+import type { IReportRenderer } from "@repo/structural/bridge/src/IReportRenderer";
+import { JsonRenderer } from "@repo/structural/bridge/src/JsonRenderer";
+import { SalesReport } from "@repo/structural/bridge/src/SalesReport";
+import { TableRenderer } from "@repo/structural/bridge/src/TableRenderer";
 import { Bundle } from "@repo/structural/composite/src/Bundle";
 import { ProductItem } from "@repo/structural/composite/src/ProductItem";
 import { AuditChannel } from "@repo/structural/decorator/src/AuditChannel";
@@ -30,6 +36,8 @@ import type { INotificationChannel } from "@repo/structural/decorator/src/INotif
 import { RetryChannel } from "@repo/structural/decorator/src/RetryChannel";
 import { SignedChannel } from "@repo/structural/decorator/src/SignedChannel";
 import { OrderFacade } from "@repo/structural/facade/src/OrderFacade";
+import { ProductTypeFactory } from "@repo/structural/flyweight/src/ProductTypeFactory";
+import { Shipment } from "@repo/structural/flyweight/src/Shipment";
 import { CachedReportProxy } from "@repo/structural/proxy/src/CachedReportProxy";
 import { useMemo, useRef, useState } from "react";
 import { Action, Choice, capture, Field, type Run, Stage, Toggle, useRun } from "./stage";
@@ -52,6 +60,8 @@ export const DEMOS: Record<string, () => React.ReactElement> = {
   facade: FacadeDemo,
   composite: CompositeDemo,
   decorator: DecoratorDemo,
+  bridge: BridgeDemo,
+  flyweight: FlyweightDemo,
 };
 
 // ── Comportamentais ─────────────────────────────────────────────
@@ -751,6 +761,126 @@ function DecoratorDemo() {
             unit="x"
           />
           <Action onClick={send}>Enviar</Action>
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+const SALES = [
+  { month: "2025-01", orders: 128, revenueInCents: 4820000 },
+  { month: "2025-02", orders: 96, revenueInCents: 3610000 },
+];
+
+const STOCK = [
+  { sku: "livro-ddd", available: 3, reserved: 1 },
+  { sku: "teclado-hhkb", available: 0, reserved: 0 },
+];
+
+const RENDERERS: Record<string, () => IReportRenderer> = {
+  table: () => new TableRenderer(),
+  csv: () => new CsvRenderer(),
+  json: () => new JsonRenderer(),
+};
+
+function BridgeDemo() {
+  const [report, setReport] = useState("sales");
+  const [renderer, setRenderer] = useState("table");
+
+  const output = useMemo(() => {
+    const target = RENDERERS[renderer]();
+    return report === "sales"
+      ? new SalesReport(target, SALES).export()
+      : new InventoryReport(target, STOCK).export();
+  }, [report, renderer]);
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Choice
+            label="Abstração"
+            value={report}
+            onChange={setReport}
+            options={[
+              { value: "sales", label: "SalesReport" },
+              { value: "inventory", label: "InventoryReport" },
+            ]}
+          />
+          <Choice
+            label="Implementação"
+            value={renderer}
+            onChange={setRenderer}
+            options={[
+              { value: "table", label: "TableRenderer" },
+              { value: "csv", label: "CsvRenderer" },
+              { value: "json", label: "JsonRenderer" },
+            ]}
+          />
+        </>
+      }
+      run={{
+        logs: [{ kind: "log", text: `report.export() → formato ${renderer}` }],
+        result: output,
+      }}
+    />
+  );
+}
+
+const CATALOG = [
+  { sku: "livro-ddd", name: "Domain-Driven Design", weight: 900, dimensions: "23x16x4cm" },
+  { sku: "teclado-hhkb", name: "Teclado HHKB", weight: 540, dimensions: "30x11x4cm" },
+  { sku: "mousepad", name: "Mousepad XL", weight: 320, dimensions: "90x40x0.4cm" },
+];
+
+function FlyweightDemo() {
+  const [shipments, setShipments] = useState(3000);
+  const [skus, setSkus] = useState(3);
+
+  const run = useMemo(() => {
+    const factory = new ProductTypeFactory();
+    const labels: string[] = [];
+
+    for (let i = 0; i < shipments; i += 1) {
+      const item = CATALOG[i % skus];
+      const type = factory.get(item.sku, item.name, item.weight, item.dimensions);
+      const shipment = new Shipment(type, `ord-${i}`, (i % 3) + 1, "Av. Paulista, 1000");
+      if (i < 2) labels.push(shipment.printLabel());
+    }
+
+    return {
+      logs: labels.map((text) => ({ kind: "log" as const, text })),
+      result: [
+        `envios criados: ${shipments.toLocaleString("pt-BR")}`,
+        `fichas de produto em memória: ${factory.size}`,
+        `instâncias criadas: ${factory.instancesCreated}`,
+      ].join("\n"),
+    };
+  }, [shipments, skus]);
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Slider
+            label="Envios"
+            value={shipments}
+            onChange={setShipments}
+            min={100}
+            max={30000}
+            step={100}
+            unit="un"
+          />
+          <Slider
+            label="Produtos no catálogo"
+            value={skus}
+            onChange={setSkus}
+            min={1}
+            max={3}
+            step={1}
+            unit="sku"
+          />
         </>
       }
       run={run}
