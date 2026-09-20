@@ -18,9 +18,17 @@ export async function renderMarkdown(md: string) {
     async walkTokens(token) {
       if (token.type !== "code") return;
       const lang = token.lang?.trim();
-      const html = lang
-        ? await highlight(token.text, lang === "typescript" ? "ts" : lang)
-        : `<figure class="diagram"><pre>${escapeHtml(token.text)}</pre></figure>`;
+      let html: string;
+
+      if (lang === "mermaid") {
+        // O desenho acontece no cliente; aqui só vai a fonte do diagrama.
+        html = `<figure class="diagram" data-mermaid="${encodeURIComponent(token.text)}"></figure>`;
+      } else if (lang) {
+        html = await highlight(token.text, lang === "typescript" ? "ts" : lang);
+      } else {
+        html = `<figure class="diagram"><pre>${escapeHtml(token.text)}</pre></figure>`;
+      }
+
       Object.assign(token, { type: "html", text: html, block: true });
     },
   });

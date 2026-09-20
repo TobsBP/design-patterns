@@ -6,13 +6,28 @@ O Observer é um padrão comportamental que define um mecanismo de assinatura: u
 
 ## Como funciona
 
+```mermaid
+sequenceDiagram
+    participant C as Cliente
+    participant S as OrderService (sujeito)
+    participant E as EmailObserver
+    participant I as InvoiceObserver
+    participant A as AnalyticsObserver
+
+    Note over S,A: os observers se inscrevem antes, com subscribe()
+    C->>S: confirm(pedido)
+    S->>S: notify(evento)
+    S->>E: onOrderConfirmed(evento)
+    E-->>S: ok
+    S->>I: onOrderConfirmed(evento)
+    I--xS: lança erro
+    Note right of S: o try/catch isola a falha:<br/>os outros observers continuam
+    S->>A: onOrderConfirmed(evento)
+    A-->>S: ok
+    S-->>C: pedido confirmado
 ```
-OrderService.confirm(pedido)   (sujeito)
-        │ notifica
-        ├──► EmailObserver     (manda a confirmação)
-        ├──► InvoiceObserver   (emite a nota fiscal)
-        └──► AnalyticsObserver (registra a compra)
-```
+
+A leitura importante é a da terceira coluna em diante: o `OrderService` dispara a mesma mensagem para cada inscrito sem saber o que eles fazem nem quantos são. A linha cortada mostra por que o `notify` envolve cada chamada em `try/catch` — um observer quebrado não pode derrubar o pedido nem impedir os que vêm depois.
 
 | Parte | Responsabilidade |
 |---|---|

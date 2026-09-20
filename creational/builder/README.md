@@ -8,12 +8,36 @@ O Builder é um padrão criacional que permite construir objetos complexos passo
 
 O padrão é composto por quatro partes:
 
+```mermaid
+classDiagram
+    class OrderDirector {
+        +buildPremiumOrder(customerId) Order
+        +buildGiftOrder(customerId) Order
+    }
+    class IOrderBuilder {
+        <<interface>>
+        +setCustomer(id) this
+        +addItem(...) this
+        +applyDiscount(percent) this
+        +addGiftWrapping() this
+        +build() Order
+    }
+    class OrderBuilder {
+        -Order order
+        +reset() this
+    }
+    class Order {
+        +items
+        +subtotal
+        +total
+    }
+
+    OrderDirector o-- IOrderBuilder : dita a receita
+    IOrderBuilder <|.. OrderBuilder
+    OrderBuilder ..> Order : monta e entrega
 ```
-Director
-  └── usa ──► IOrderBuilder (interface)
-                   └── implementado por ──► OrderBuilder
-                                               └── produz ──► Order
-```
+
+Os métodos que devolvem `this` são o que permite o encadeamento — cada passo devolve o próprio builder para o próximo. O `Order` só aparece no fim, saindo do `build()`: até ali ele está incompleto e ninguém tem acesso a ele. O `Director` é opcional e guarda receitas conhecidas; sem ele, o cliente encadeia os passos que quiser.
 
 | Parte | Responsabilidade |
 |---|---|

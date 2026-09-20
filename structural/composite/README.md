@@ -6,12 +6,31 @@ O Composite é um padrão estrutural que organiza objetos numa **árvore** e faz
 
 ## Como funciona
 
+```mermaid
+classDiagram
+    class ICartItem {
+        <<interface>>
+        +name string
+        +totalInCents() number
+        +print(depth)
+    }
+    class ProductItem {
+        -unitPriceInCents
+        -quantity
+    }
+    class Bundle {
+        -ICartItem[] items
+        -discountPercent
+        +add(item) this
+        +remove(item) this
+    }
+
+    ICartItem <|.. ProductItem : folha
+    ICartItem <|.. Bundle : composto
+    Bundle o-- ICartItem : contém N filhos
 ```
-        ICartItem
-        ├── ProductItem  (folha: só sabe o próprio preço)
-        └── Bundle       (composto: contém outros ICartItem)
-                └── ICartItem ──► pode ser folha ou outro Bundle
-```
+
+A seta que sai do `Bundle` e volta para `ICartItem` é a recursão: como o filho é da interface, ele pode ser um produto **ou outro kit**, sem limite de profundidade. Por isso `totalInCents()` na raiz soma a árvore inteira com uma chamada só, e o cliente nunca precisa perguntar com quem está falando.
 
 | Parte | Responsabilidade |
 |---|---|

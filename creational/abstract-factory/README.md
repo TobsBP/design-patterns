@@ -6,15 +6,42 @@ O Abstract Factory é um padrão criacional que cria **famílias de objetos que 
 
 ## Como funciona
 
+```mermaid
+classDiagram
+    class Checkout {
+        -ICheckoutFactory factory
+        +finish(orderId, amount) Summary
+    }
+    class ICheckoutFactory {
+        <<interface>>
+        +region string
+        +currency string
+        +createTaxCalculator() ITaxCalculator
+        +createInvoiceIssuer() IInvoiceIssuer
+    }
+    class ITaxCalculator {
+        <<interface>>
+        +taxFor(amount) number
+    }
+    class IInvoiceIssuer {
+        <<interface>>
+        +issue(orderId, amount, tax) string
+    }
+
+    Checkout o-- ICheckoutFactory
+    ICheckoutFactory <|.. BrazilCheckoutFactory
+    ICheckoutFactory <|.. UsaCheckoutFactory
+    ITaxCalculator <|.. BrazilTaxCalculator
+    ITaxCalculator <|.. UsaTaxCalculator
+    IInvoiceIssuer <|.. BrazilInvoiceIssuer
+    IInvoiceIssuer <|.. UsaInvoiceIssuer
+    BrazilCheckoutFactory ..> BrazilTaxCalculator : cria
+    BrazilCheckoutFactory ..> BrazilInvoiceIssuer : cria
+    UsaCheckoutFactory ..> UsaTaxCalculator : cria
+    UsaCheckoutFactory ..> UsaInvoiceIssuer : cria
 ```
-Checkout (cliente)
-      │ usa
-      ▼
-ICheckoutFactory ──── cria ────► ITaxCalculator
-      │                          IInvoiceIssuer
-      ├── BrazilCheckoutFactory ──► BrazilTaxCalculator + BrazilInvoiceIssuer
-      └── UsaCheckoutFactory    ──► UsaTaxCalculator    + UsaInvoiceIssuer
-```
+
+O desenho tem duas metades que nunca se cruzam: as setas "cria" saindo da fábrica brasileira só chegam em classes brasileiras, e o mesmo vale do outro lado. É exatamente essa ausência de cruzamento que o padrão garante em código — não existe caminho para o `Checkout` obter um `BrazilTaxCalculator` junto de um `UsaInvoiceIssuer`.
 
 | Parte | Responsabilidade |
 |---|---|

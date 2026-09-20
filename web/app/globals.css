@@ -218,6 +218,25 @@ body {
 .doc .diagram {
   margin: 1.5rem 0;
 }
+.doc .diagram[data-rendered] {
+  border: 1px solid var(--color-line-soft);
+  border-radius: 6px;
+  background: var(--color-ink-850);
+  padding: 1.5rem;
+  overflow-x: auto;
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* O diagrama fica no tamanho natural e o container rola — encolher para caber
+   deixaria os rótulos ilegíveis nos desenhos mais largos. */
+.doc .diagram svg {
+  width: auto !important;
+  max-width: none !important;
+  height: auto;
+  flex: none;
+}
+
 .doc .diagram pre {
   background: transparent !important;
   border: 1px dashed var(--color-line);

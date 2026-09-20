@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CodeTabs } from "@/components/code-tabs";
+import { MermaidDiagrams } from "@/components/mermaid";
 import { PatternDemo } from "@/components/pattern-demo";
 import { highlight, renderMarkdown } from "@/lib/markdown";
 import { CATEGORIES, type Category, getCatalog, getPattern } from "@/lib/patterns";
@@ -72,6 +73,7 @@ export default async function PatternPage({ params }: PageProps<"/[category]/[sl
           <PatternDemo slug={slug} />
 
           <article className="doc mt-16" dangerouslySetInnerHTML={{ __html: doc }} />
+          <MermaidDiagrams family={category} />
 
           {files.length > 0 && (
             <section className="mt-20">

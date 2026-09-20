@@ -6,15 +6,36 @@ O Strategy é um padrão comportamental que coloca cada algoritmo em uma classe 
 
 ## Como funciona
 
+```mermaid
+classDiagram
+    class ShippingCalculator {
+        -IShippingStrategy strategy
+        +setStrategy(strategy)
+        +quote(pkg) Quote
+    }
+    class IShippingStrategy {
+        <<interface>>
+        +name string
+        +calculate(pkg) number
+        +estimatedDays(pkg) number
+    }
+    class StandardShipping {
+        +name = "PAC"
+    }
+    class ExpressShipping {
+        +name = "Sedex"
+    }
+    class PickupShipping {
+        +name = "Retirada na loja"
+    }
+
+    ShippingCalculator o-- IShippingStrategy : guarda uma, troca em runtime
+    IShippingStrategy <|.. StandardShipping
+    IShippingStrategy <|.. ExpressShipping
+    IShippingStrategy <|.. PickupShipping
 ```
-ShippingCalculator (contexto)
-        │ usa
-        ▼
-   IShippingStrategy
-        ├── StandardShipping  (PAC)
-        ├── ExpressShipping   (Sedex)
-        └── PickupShipping    (retirada na loja)
-```
+
+O losango entre `ShippingCalculator` e `IShippingStrategy` é o ponto do padrão: o contexto **tem uma** strategy em vez de **ser** uma. A seta tracejada é implementação — cada classe concreta cumpre o mesmo contrato de um jeito diferente, e nenhuma delas conhece as outras. Trocar a linha `calculator.setStrategy(...)` troca o algoritmo inteiro sem recompilar nada do contexto.
 
 | Parte | Responsabilidade |
 |---|---|

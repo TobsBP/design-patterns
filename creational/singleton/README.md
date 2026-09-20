@@ -4,6 +4,24 @@ Garante que uma classe tenha apenas uma instância e fornece um ponto de acesso 
 
 Neste projeto o padrão é aplicado na camada de banco de dados (`Database`), onde uma única conexão com o Supabase é criada e reutilizada por toda a aplicação.
 
+## Como funciona
+
+```mermaid
+flowchart TD
+    A[Repository] -->|"import database"| G
+    B[Service] -->|"import database"| G
+    C["qualquer outro módulo"] -->|"import database"| G
+    G["Database.getInstance()"] --> D{"instance<br/>já existe?"}
+    D -->|"não — 1ª chamada"| N["new Database()<br/>abre a conexão"]
+    D -->|"sim"| E["devolve a mesma instância"]
+    N --> E
+    E --> S[("SupabaseClient<br/>único")]
+```
+
+O losango é a *lazy initialization*: a conexão só nasce na primeira chamada, e daí em diante todo mundo recebe o mesmo objeto. As três setas entrando por cima mostram o outro lado da moeda — qualquer módulo alcança essa instância sem declarar que depende dela, que é a razão de o padrão dificultar testes.
+
+---
+
 ## Vantagens
 
 - **Economia de recurso** — conexões com banco são caras. Criar uma só vez e reutilizar evita overhead desnecessário.

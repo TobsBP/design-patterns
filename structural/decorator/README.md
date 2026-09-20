@@ -6,16 +6,20 @@ O Decorator é um padrão estrutural que acrescenta comportamento a um objeto **
 
 ## Como funciona
 
-```
-INotificationChannel
-   ├── EmailChannel              (componente concreto: envia de verdade)
-   └── ChannelDecorator          (base: guarda o objeto embrulhado)
-         ├── SignedChannel       (muda a mensagem)
-         ├── RetryChannel        (muda quando a chamada acontece)
-         └── AuditChannel        (acrescenta um efeito em volta)
+```mermaid
+flowchart LR
+    C["cliente<br/>send(to, msg)"] --> S
+    S["SignedChannel<br/>acrescenta a assinatura"] --> A
+    A["AuditChannel<br/>registra o que passou"] --> R
+    R["RetryChannel<br/>repete se falhar"] --> E
+    E["EmailChannel<br/>envia de verdade"]
+    R -.->|"tentativa 1 falhou"| R
 
-assinatura( auditoria( retry( email ) ) )
+    classDef base stroke-width:2px
+    class E base
 ```
+
+Todas as caixas têm a mesma interface — é isso que permite encaixá-las em qualquer ordem, e é por isso que o cliente enxerga só a primeira. A seta que volta para o `RetryChannel` mostra uma camada que altera *quando* a chamada acontece, não o conteúdo. E a posição importa: com o `AuditChannel` depois do `SignedChannel`, o log registra a mensagem já assinada; invertidos, registraria o texto cru.
 
 | Parte | Responsabilidade |
 |---|---|

@@ -6,13 +6,30 @@ O Facade é um padrão estrutural que fornece uma interface simples para um conj
 
 ## Como funciona
 
+```mermaid
+sequenceDiagram
+    participant C as Cliente
+    participant F as OrderFacade
+    participant E as InventoryService
+    participant P as PaymentService
+    participant S as ShippingService
+    participant N as NotificationService
+
+    C->>F: placeOrder(pedido)
+    F->>E: isAvailable(sku, qtd)
+    E-->>F: true
+    F->>E: reserve(sku, qtd)
+    F->>P: charge(cliente, valor)
+    P-->>F: chargeId
+    F->>S: schedule(sku, qtd, endereço)
+    S--xF: falha no agendamento
+    Note over F: a facade desfaz na ordem inversa
+    F->>P: refund(chargeId)
+    F->>E: release(sku, qtd)
+    F-->>C: erro
 ```
-Cliente ──► OrderFacade.placeOrder(pedido)
-                 ├── InventoryService     (verifica e reserva estoque)
-                 ├── PaymentService       (cobra / estorna)
-                 ├── ShippingService      (agenda a entrega)
-                 └── NotificationService  (avisa o cliente)
-```
+
+O diagrama mostra o caminho de erro de propósito: o valor da facade não está em chamar quatro serviços, e sim em saber **a ordem** e **o que desfazer** quando algo falha no meio. Esse conhecimento é justamente o que ficaria espalhado (e divergente) se cada tela chamasse os subsistemas por conta própria.
 
 | Parte | Responsabilidade |
 |---|---|

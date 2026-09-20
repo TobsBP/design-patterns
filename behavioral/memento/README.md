@@ -6,11 +6,24 @@ O Memento é um padrão comportamental que permite salvar e restaurar o estado d
 
 ## Como funciona
 
+```mermaid
+sequenceDiagram
+    participant H as History (caretaker)
+    participant E as TextEditor (originador)
+    participant M as EditorSnapshot (memento)
+
+    H->>E: save()
+    E->>M: new EditorSnapshot(conteudo, cursor)
+    M-->>H: snapshot fechado
+    Note over H,M: o caretaker guarda a caixa,<br/>mas não consegue abrir
+    E->>E: type("mais texto")
+    H->>E: restore(snapshot)
+    E->>M: getState()
+    M-->>E: { conteudo, cursor }
+    Note over E: só o originador sabe ler o memento
 ```
-History (caretaker)          TextEditor (originador)
-   backup() ──── save() ────────► EditorSnapshot (memento)
-   undo()   ──── restore(snapshot) ◄──┘
-```
+
+As duas notas são o padrão inteiro. O `History` empilha e devolve snapshots sem nunca ler o que tem dentro — ele não sabe que existe um cursor, e por isso mudar o estado interno do editor não quebra o histórico. E como só o `TextEditor` chama `getState`, o encapsulamento sobrevive ao undo.
 
 | Parte | Responsabilidade |
 |---|---|

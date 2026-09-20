@@ -6,11 +6,30 @@ O Adapter é um padrão estrutural que permite que objetos com interfaces incomp
 
 ## Como funciona
 
+```mermaid
+classDiagram
+    class IPaymentProcessor {
+        <<interface>>
+        +pay(amountInCents, currency)
+    }
+    class StripeProcessor {
+        +pay(amountInCents, currency)
+    }
+    class PaypalAdapter {
+        -LegacyPaypalGateway gateway
+        +pay(amountInCents, currency)
+    }
+    class LegacyPaypalGateway {
+        <<legado>>
+        +sendPayment(value string, currencyCode number)
+    }
+
+    IPaymentProcessor <|.. StripeProcessor
+    IPaymentProcessor <|.. PaypalAdapter
+    PaypalAdapter o-- LegacyPaypalGateway : traduz a chamada
 ```
-Cliente ──► IPaymentProcessor
-              ├── StripeProcessor      (já compatível)
-              └── PaypalAdapter ──► LegacyPaypalGateway (API incompatível)
-```
+
+Compare as duas assinaturas: o cliente fala `pay(24900, 'BRL')` e o serviço legado exige `sendPayment('249.00', 986)`. O adapter existe só para viver entre essas duas linhas — ele implementa a interface de cá e converte centavos em string decimal e sigla em código ISO antes de repassar. O `StripeProcessor` mostra o contraste: quem já nasceu compatível não precisa de adapter.
 
 | Parte | Responsabilidade |
 |---|---|

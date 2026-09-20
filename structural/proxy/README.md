@@ -6,11 +6,26 @@ O Proxy é um padrão estrutural que coloca um substituto na frente de outro obj
 
 ## Como funciona
 
+```mermaid
+sequenceDiagram
+    participant C as Cliente
+    participant P as CachedReportProxy
+    participant R as ReportService (caro)
+
+    C->>P: generate("2026-01")
+    Note over P: cache vazio e serviço ainda nem existe
+    P->>R: new ReportService()
+    P->>R: generate("2026-01")
+    R-->>P: relatório
+    P->>P: guarda no cache
+    P-->>C: relatório
+
+    C->>P: generate("2026-01")
+    Note over P,R: cache hit — o serviço real<br/>nem é chamado
+    P-->>C: relatório do cache
 ```
-Cliente ──► IReportService ──► CachedReportProxy ──► ReportService (caro)
-                                    ├── cache por mês
-                                    └── só instancia o serviço na 1ª chamada
-```
+
+As duas chamadas são idênticas do ponto de vista do cliente, e é esse o ponto: ele depende de `IReportService` e não percebe a diferença. O que muda é o que acontece atrás — na primeira, o proxy cria o serviço (criação preguiçosa) e delega; na segunda, ele responde sozinho. Um proxy pode legitimamente nunca chamar o objeto real.
 
 | Parte | Responsabilidade |
 |---|---|

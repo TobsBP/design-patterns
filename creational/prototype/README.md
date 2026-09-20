@@ -6,14 +6,23 @@ O Prototype é um padrão criacional que cria objetos **copiando um que já exis
 
 ## Como funciona
 
+```mermaid
+flowchart TD
+    R["ProductRegistry<br/>(guarda os protótipos)"]
+    P["Product 'camiseta'<br/>specs: Map, tags: Array"]
+    C1["cópia 1<br/>specs: Map NOVO, tags: Array NOVO"]
+    C2["cópia 2<br/>specs: Map NOVO, tags: Array NOVO"]
+
+    R -->|"guarda uma vez"| P
+    P -->|"clone()"| C1
+    P -->|"clone()"| C2
+    C1 -.->|"specs.set('cor')<br/>não afeta o original"| P
+
+    classDef proto stroke-dasharray: 4 3
+    class P proto
 ```
-ProductRegistry (registro de protótipos)
-        │ guarda
-        ▼
-     Product ──── clone() ────► Product (cópia independente)
-        │
-        └── implementa IPrototype<Product>
-```
+
+O que o diagrama enfatiza é o "NOVO" nas cópias: `clone()` recria o `Map` e o array em vez de reaproveitar as referências do protótipo. Numa cópia rasa as três caixas apontariam para a mesma estrutura, e a seta pontilhada — a alteração feita na cópia — voltaria para o original, corrompendo todas as variações seguintes.
 
 | Parte | Responsabilidade |
 |---|---|

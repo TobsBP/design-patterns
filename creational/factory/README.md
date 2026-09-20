@@ -6,13 +6,30 @@ O Factory é um padrão criacional que centraliza a criação de objetos. Em vez
 
 ## Como funciona
 
+```mermaid
+classDiagram
+    class NotifierFactory {
+        <<static>>
+        +create(type) INotifier
+    }
+    class INotifier {
+        <<interface>>
+        +send(to, message)
+    }
+    class EmailNotifier
+    class SMSNotifier
+    class PushNotifier
+
+    NotifierFactory ..> INotifier : devolve
+    INotifier <|.. EmailNotifier
+    INotifier <|.. SMSNotifier
+    INotifier <|.. PushNotifier
+    NotifierFactory ..> EmailNotifier : conhece
+    NotifierFactory ..> SMSNotifier : conhece
+    NotifierFactory ..> PushNotifier : conhece
 ```
-NotifierFactory.create(type)
-  └── retorna ──► INotifier
-                    ├── EmailNotifier
-                    ├── SMSNotifier
-                    └── PushNotifier
-```
+
+Repare que as classes concretas têm **duas** setas chegando nelas e o cliente não aparece no desenho — é ele que sai ganhando. Todo o conhecimento sobre `EmailNotifier`, `SMSNotifier` e `PushNotifier` fica concentrado na factory; quem chama `create` só enxerga `INotifier`. Um canal novo acrescenta uma seta aqui e nenhuma linha no código que envia notificações.
 
 | Parte | Responsabilidade |
 |---|---|
