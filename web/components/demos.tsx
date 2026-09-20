@@ -30,6 +30,13 @@ import { ShippingCalculator } from "@repo/behavioral/strategy/src/ShippingCalcul
 import { StandardShipping } from "@repo/behavioral/strategy/src/StandardShipping";
 import { CsvCatalogImporter } from "@repo/behavioral/template-method/src/CsvCatalogImporter";
 import { JsonCatalogImporter } from "@repo/behavioral/template-method/src/JsonCatalogImporter";
+import { DigitalProduct } from "@repo/behavioral/visitor/src/DigitalProduct";
+import { GiftCard } from "@repo/behavioral/visitor/src/GiftCard";
+import { InvoiceLineVisitor } from "@repo/behavioral/visitor/src/InvoiceLineVisitor";
+import { Order as VisitorOrder } from "@repo/behavioral/visitor/src/Order";
+import { PhysicalProduct } from "@repo/behavioral/visitor/src/PhysicalProduct";
+import { ShippingCostVisitor } from "@repo/behavioral/visitor/src/ShippingCostVisitor";
+import { TaxVisitor } from "@repo/behavioral/visitor/src/TaxVisitor";
 import { BrazilCheckoutFactory } from "@repo/creational/abstract-factory/src/BrazilCheckoutFactory";
 import { Checkout } from "@repo/creational/abstract-factory/src/Checkout";
 import { UsaCheckoutFactory } from "@repo/creational/abstract-factory/src/UsaCheckoutFactory";
@@ -75,6 +82,7 @@ export const DEMOS: Record<string, () => React.ReactElement> = {
   mediator: MediatorDemo,
   state: StateDemo,
   "template-method": TemplateMethodDemo,
+  visitor: VisitorDemo,
   factory: FactoryDemo,
   builder: BuilderDemo,
   singleton: SingletonDemo,
@@ -631,6 +639,70 @@ function TemplateMethodDemo() {
             ]}
           />
           <Action onClick={load}>Importar catálogo</Action>
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+function VisitorDemo() {
+  const [visitor, setVisitor] = useState("invoice");
+  const [physical, setPhysical] = useState(true);
+  const [digital, setDigital] = useState(true);
+  const [gift, setGift] = useState(true);
+
+  const run = useMemo(() => {
+    const items = [];
+    if (physical) items.push(new PhysicalProduct("Livro DDD", 12900, 900));
+    if (digital)
+      items.push(new DigitalProduct("Curso de TypeScript", 19900, "https://loja.exemplo/curso"));
+    if (gift) items.push(new GiftCard("Vale-presente R$ 100", 10000, "amigo@exemplo.com"));
+
+    const order = new VisitorOrder(items);
+
+    if (visitor === "invoice") {
+      return {
+        logs: order
+          .accept(new InvoiceLineVisitor())
+          .map((text) => ({ kind: "log" as const, text })),
+        result: `${items.length} linha(s) de nota fiscal`,
+      };
+    }
+
+    const operation = visitor === "shipping" ? new ShippingCostVisitor() : new TaxVisitor();
+    const perItem = order.accept(operation);
+
+    return {
+      logs: items.map((item, i) => ({
+        kind: "log" as const,
+        text: `${item.name}: ${money(perItem[i])}`,
+      })),
+      result: `total: ${money(order.total(operation))}`,
+    };
+  }, [visitor, physical, digital, gift]);
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Choice
+            label="Visitante aplicado"
+            value={visitor}
+            onChange={setVisitor}
+            options={[
+              { value: "invoice", label: "InvoiceLineVisitor" },
+              { value: "shipping", label: "ShippingCostVisitor" },
+              { value: "tax", label: "TaxVisitor" },
+            ]}
+          />
+          <Field label="Itens do pedido">
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              <Toggle label="produto físico" checked={physical} onChange={setPhysical} />
+              <Toggle label="produto digital" checked={digital} onChange={setDigital} />
+              <Toggle label="vale-presente" checked={gift} onChange={setGift} />
+            </div>
+          </Field>
         </>
       }
       run={run}

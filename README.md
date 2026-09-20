@@ -45,7 +45,7 @@ Cuidam da comunicação eficiente e da atribuição de responsabilidades entre o
 - [x] [State](./behavioral/state/) — Permite que um objeto altere seu comportamento quando seu estado interno muda.
 - [x] [Strategy](./behavioral/strategy/) — Define uma família de algoritmos, encapsula cada um deles e os torna intercambiáveis.
 - [x] [Template Method](./behavioral/template-method/) — Define o esqueleto de um algoritmo na superclasse, permitindo que subclasses sobrescrevam etapas específicas.
-- [ ] Visitor — Permite separar algoritmos dos objetos nos quais eles operam.
+- [x] [Visitor](./behavioral/visitor/) — Permite separar algoritmos dos objetos nos quais eles operam.
 
 ---
 
