@@ -11,8 +11,13 @@ import type { IShippingStrategy } from "@repo/behavioral/strategy/src/IShippingS
 import { PickupShipping } from "@repo/behavioral/strategy/src/PickupShipping";
 import { ShippingCalculator } from "@repo/behavioral/strategy/src/ShippingCalculator";
 import { StandardShipping } from "@repo/behavioral/strategy/src/StandardShipping";
+import { BrazilCheckoutFactory } from "@repo/creational/abstract-factory/src/BrazilCheckoutFactory";
+import { Checkout } from "@repo/creational/abstract-factory/src/Checkout";
+import { UsaCheckoutFactory } from "@repo/creational/abstract-factory/src/UsaCheckoutFactory";
 import { OrderBuilder } from "@repo/creational/builder/src/OrderBuilder";
 import { NotifierFactory, type NotifierType } from "@repo/creational/factory/src/NotifierFactory";
+import { Product } from "@repo/creational/prototype/src/Product";
+import { ProductRegistry } from "@repo/creational/prototype/src/ProductRegistry";
 import type { IPaymentProcessor } from "@repo/structural/adapter/src/IPaymentProcessor";
 import { PaypalAdapter } from "@repo/structural/adapter/src/PaypalAdapter";
 
@@ -33,6 +38,8 @@ export const DEMOS: Record<string, () => React.ReactElement> = {
   factory: FactoryDemo,
   builder: BuilderDemo,
   singleton: SingletonDemo,
+  "abstract-factory": AbstractFactoryDemo,
+  prototype: PrototypeDemo,
   adapter: AdapterDemo,
   proxy: ProxyDemo,
   facade: FacadeDemo,
@@ -371,6 +378,114 @@ function SingletonDemo() {
       }
     />
   );
+}
+
+function AbstractFactoryDemo() {
+  const [run, setRun] = useRun();
+  const [country, setCountry] = useState("BR");
+
+  const finish = () =>
+    setRun(
+      capture(() => {
+        const factory = country === "BR" ? new BrazilCheckoutFactory() : new UsaCheckoutFactory();
+        const summary = new Checkout(factory).finish("ord-901", 24900);
+        return [
+          `região: ${summary.region}`,
+          `imposto: ${summary.currency} ${(summary.taxInCents / 100).toFixed(2)}`,
+          `total: ${summary.currency} ${(summary.totalInCents / 100).toFixed(2)}`,
+          `documento: ${summary.invoiceNumber}`,
+        ].join("\n");
+      }),
+    );
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Choice
+            label="Fábrica injetada no Checkout"
+            value={country}
+            onChange={setCountry}
+            options={[
+              { value: "BR", label: "BrazilCheckoutFactory" },
+              { value: "US", label: "UsaCheckoutFactory" },
+            ]}
+          />
+          <Action onClick={finish}>Fechar pedido de 249,00</Action>
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+function PrototypeDemo() {
+  const registry = useRef(createRegistry()).current;
+  const [copies, setCopies] = useState<string[]>([]);
+
+  const spawn = (change: (product: Product) => void) => {
+    const product = registry.spawn("camiseta");
+    change(product);
+    setCopies((current) => [...current, product.describe()]);
+  };
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Field label="Criar variação a partir do protótipo">
+            <div className="flex flex-wrap gap-1.5">
+              <Action
+                tone="ghost"
+                onClick={() =>
+                  spawn((product) => {
+                    product.name = "Camiseta preta";
+                    product.specs.set("cor", "preta");
+                  })
+                }
+              >
+                versão preta
+              </Action>
+              <Action
+                tone="ghost"
+                onClick={() =>
+                  spawn((product) => {
+                    product.name = "Camiseta estampada";
+                    product.priceInCents = 9900;
+                    product.tags.push("estampa");
+                  })
+                }
+              >
+                versão estampada
+              </Action>
+            </div>
+          </Field>
+          <Action onClick={() => setCopies([])}>Limpar</Action>
+        </>
+      }
+      run={{
+        logs: copies.map((text) => ({ kind: "log" as const, text })),
+        result: `protótipo no registro: ${registry.spawn("camiseta").describe()}`,
+      }}
+    />
+  );
+}
+
+function createRegistry() {
+  const registry = new ProductRegistry();
+  registry.register(
+    "camiseta",
+    new Product({
+      name: "Camiseta básica",
+      priceInCents: 7900,
+      specs: new Map([
+        ["tecido", "algodão penteado"],
+        ["gramatura", "180g"],
+      ]),
+      tags: ["vestuario", "basico"],
+    }),
+  );
+  return registry;
 }
 
 // ── Estruturais ─────────────────────────────────────────────────
