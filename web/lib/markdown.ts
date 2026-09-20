@@ -22,7 +22,7 @@ export async function renderMarkdown(md: string) {
 
       if (lang === "mermaid") {
         // O desenho acontece no cliente; aqui só vai a fonte do diagrama.
-        html = `<figure class="diagram" data-mermaid="${encodeURIComponent(token.text)}"></figure>`;
+        html = `<figure class="diagram" data-mermaid="${encodeURIComponent(token.text)}"><div class="diagram-canvas"></div></figure>`;
       } else if (lang) {
         html = await highlight(token.text, lang === "typescript" ? "ts" : lang);
       } else {

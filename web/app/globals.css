@@ -219,6 +219,7 @@ body {
   margin: 1.5rem 0;
 }
 .doc .diagram[data-rendered] {
+  position: relative;
   border: 1px solid var(--color-line-soft);
   border-radius: 6px;
   background: var(--color-ink-850);
@@ -235,6 +236,70 @@ body {
   max-width: none !important;
   height: auto;
   flex: none;
+}
+
+.diagram-fullscreen {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 1px solid var(--color-line);
+  border-radius: 5px;
+  background: var(--color-ink-800);
+  color: var(--color-fg-faint);
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms var(--ease-out);
+}
+
+.diagram-fullscreen:hover {
+  color: var(--color-fg);
+  border-color: var(--family);
+}
+
+.diagram-fullscreen:active {
+  transform: scale(0.94);
+}
+
+/* Tela cheia de verdade e o modo de reserva, para quem não tem a Fullscreen API. */
+.doc .diagram:fullscreen,
+.doc .diagram[data-expanded] {
+  margin: 0;
+  padding: 3rem 1.5rem;
+  border-radius: 0;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-ink-900);
+}
+
+.doc .diagram[data-expanded] {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+/* O viewBox com preserveAspectRatio padrão já centraliza e escala sozinho. */
+.doc .diagram:fullscreen svg,
+.doc .diagram[data-expanded] svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+}
+
+.doc .diagram:fullscreen .diagram-canvas,
+.doc .diagram[data-expanded] .diagram-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.doc .diagram:fullscreen .diagram-fullscreen,
+.doc .diagram[data-expanded] .diagram-fullscreen {
+  top: 1rem;
+  right: 1rem;
 }
 
 .doc .diagram pre {
