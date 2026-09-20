@@ -27,6 +27,49 @@
   --family: var(--color-structural);
 }
 
+/*
+ * Tema claro: papel frio da mesma família do petróleo escuro, e os pigmentos
+ * das categorias escurecidos até passarem no contraste sobre fundo claro.
+ * A preferência do sistema vale enquanto o visitante não escolher no botão.
+ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+
+    --color-ink-900: #edf1f2;
+    --color-ink-850: #ffffff;
+    --color-ink-800: #f7fafa;
+    --color-ink-700: #e4eaec;
+    --color-line: #c3d1d6;
+    --color-line-soft: #dbe4e7;
+    --color-fg: #101a1e;
+    --color-fg-dim: #46585f;
+    --color-fg-faint: #5d7078;
+
+    --color-creational: #8a6210;
+    --color-structural: #17638f;
+    --color-behavioral: #ab2963;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --color-ink-900: #edf1f2;
+  --color-ink-850: #ffffff;
+  --color-ink-800: #f7fafa;
+  --color-ink-700: #e4eaec;
+  --color-line: #c3d1d6;
+  --color-line-soft: #dbe4e7;
+  --color-fg: #101a1e;
+  --color-fg-dim: #46585f;
+  --color-fg-faint: #5d7078;
+
+  --color-creational: #8a6210;
+  --color-structural: #17638f;
+  --color-behavioral: #ab2963;
+}
+
 html {
   scrollbar-color: var(--color-line) transparent;
 }
@@ -77,7 +120,7 @@ body {
 .doc {
   font-size: 1.0625rem;
   line-height: 1.7;
-  color: #d3e0e4;
+  color: color-mix(in oklab, var(--color-fg) 88%, var(--color-fg-dim));
 }
 
 /* A medida vale para o texto; tabelas, código e diagramas usam a coluna inteira. */
@@ -198,7 +241,20 @@ body {
   border: 1px solid var(--color-line-soft);
   border-radius: 4px;
   padding: 0.1em 0.35em;
-  color: #cfe3e9;
+  color: color-mix(in oklab, var(--color-fg) 85%, var(--color-fg-dim));
+}
+
+/* O shiki carrega as duas paletas; aqui escolhemos a clara. */
+:root[data-theme="light"] .shiki,
+:root[data-theme="light"] .shiki span {
+  color: var(--shiki-light) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .shiki,
+  :root:not([data-theme="dark"]) .shiki span {
+    color: var(--shiki-light) !important;
+  }
 }
 
 .doc pre,

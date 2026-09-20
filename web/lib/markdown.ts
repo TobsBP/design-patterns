@@ -1,10 +1,12 @@
 import { Marked } from "marked";
 import { codeToHtml } from "shiki";
 
-const THEME = "vesper";
+// Duas paletas no mesmo HTML: o shiki emite --shiki-light junto da cor escura,
+// e o CSS escolhe qual usar conforme o tema.
+const THEMES = { light: "github-light", dark: "vesper" } as const;
 
 export async function highlight(code: string, lang = "ts") {
-  return codeToHtml(code, { lang, theme: THEME });
+  return codeToHtml(code, { lang, themes: THEMES, defaultColor: "dark" });
 }
 
 /**

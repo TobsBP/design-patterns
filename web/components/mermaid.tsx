@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const EXPAND_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 1.75H1.75V6M10 1.75h4.25V6M6 14.25H1.75V10M10 14.25h4.25V10"/></svg>`;
 const COLLAPSE_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.75 5.5H6V1.25M14.25 5.5H10V1.25M1.75 10.5H6v4.25M14.25 10.5H10v4.25"/></svg>`;
@@ -11,6 +11,8 @@ const COLLAPSE_ICON = `<svg viewBox="0 0 16 16" width="14" height="14" fill="non
  * realmente tem um diagrama.
  */
 export function MermaidDiagrams({ family }: { family: string }) {
+  const theme = useThemeAttribute();
+
   useEffect(() => {
     const figures = [...document.querySelectorAll<HTMLElement>("figure[data-mermaid]")];
     if (figures.length === 0) return;
@@ -91,9 +93,37 @@ export function MermaidDiagrams({ family }: { family: string }) {
       cancelled = true;
       for (const cleanup of cleanups) cleanup();
     };
-  }, [family]);
+    // O tema entra como dependência: as cores do diagrama vêm dos tokens,
+    // então trocar de tema exige desenhar de novo.
+  }, [family, theme]);
 
   return null;
+}
+
+/** Acompanha o data-theme do <html>, inclusive quando o botão o altera. */
+function useThemeAttribute() {
+  const [theme, setTheme] = useState<string>("");
+
+  useEffect(() => {
+    const read = () => setTheme(document.documentElement.dataset.theme ?? "system");
+    read();
+
+    const observer = new MutationObserver(read);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    const media = matchMedia("(prefers-color-scheme: light)");
+    media.addEventListener("change", read);
+
+    return () => {
+      observer.disconnect();
+      media.removeEventListener("change", read);
+    };
+  }, []);
+
+  return theme;
 }
 
 function addFullscreenButton(figure: HTMLElement) {
