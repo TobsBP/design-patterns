@@ -231,6 +231,11 @@ body {
 
 /* O diagrama fica no tamanho natural e o container rola — encolher para caber
    deixaria os rótulos ilegíveis nos desenhos mais largos. */
+/* O mermaid pinta a borda dos subgraphs com um gradiente próprio, fora do tema. */
+.doc .diagram svg .cluster > rect {
+  stroke: var(--color-line) !important;
+}
+
 .doc .diagram svg {
   width: auto !important;
   max-width: none !important;

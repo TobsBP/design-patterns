@@ -52,6 +52,8 @@ export function MermaidDiagrams({ family }: { family: string }) {
           actorTextColor: token("--color-fg"),
           signalColor: token("--color-fg-dim"),
           signalTextColor: token("--color-fg-dim"),
+          clusterBkg: token("--color-ink-800"),
+          clusterBorder: token("--color-line"),
           labelBoxBkgColor: token("--color-ink-800"),
           labelBoxBorderColor: token("--color-line"),
         },

@@ -9,6 +9,13 @@ import { ApplyCouponCommand } from "@repo/behavioral/command/src/ApplyCouponComm
 import { Cart } from "@repo/behavioral/command/src/Cart";
 import { CommandBus } from "@repo/behavioral/command/src/CommandBus";
 import { RemoveItemCommand } from "@repo/behavioral/command/src/RemoveItemCommand";
+import { PagedCatalog } from "@repo/behavioral/iterator/src/PagedCatalog";
+import { CheckoutMediator } from "@repo/behavioral/mediator/src/CheckoutMediator";
+import { CouponField } from "@repo/behavioral/mediator/src/CouponField";
+import { PlaceOrderButton } from "@repo/behavioral/mediator/src/PlaceOrderButton";
+import type { ShippingMethod } from "@repo/behavioral/mediator/src/ShippingSelect";
+import { ShippingSelect } from "@repo/behavioral/mediator/src/ShippingSelect";
+import { TotalLabel } from "@repo/behavioral/mediator/src/TotalLabel";
 import { History } from "@repo/behavioral/memento/src/History";
 import { TextEditor } from "@repo/behavioral/memento/src/TextEditor";
 import { AnalyticsObserver } from "@repo/behavioral/observer/src/AnalyticsObserver";
@@ -61,6 +68,8 @@ export const DEMOS: Record<string, () => React.ReactElement> = {
   memento: MementoDemo,
   "chain-of-responsibility": ChainDemo,
   command: CommandDemo,
+  iterator: IteratorDemo,
+  mediator: MediatorDemo,
   factory: FactoryDemo,
   builder: BuilderDemo,
   singleton: SingletonDemo,
@@ -391,6 +400,132 @@ function CommandDemo() {
         result: [
           `carrinho: ${view.cart}`,
           `histórico (${view.log.length}): ${view.log.join(" → ") || "vazio"}`,
+        ].join("\n"),
+      }}
+    />
+  );
+}
+
+const CATALOG_PRODUCTS = [
+  { sku: "livro-ddd", name: "Livro DDD", priceInCents: 12900, inStock: true },
+  { sku: "teclado-hhkb", name: "Teclado HHKB", priceInCents: 245000, inStock: false },
+  { sku: "mousepad", name: "Mousepad XL", priceInCents: 4000, inStock: true },
+  { sku: "headset", name: "Headset", priceInCents: 20000, inStock: false },
+  { sku: "monitor-4k", name: "Monitor 4K", priceInCents: 180000, inStock: true },
+];
+
+function IteratorDemo() {
+  const [run, setRun] = useRun();
+  const [kind, setKind] = useState("all");
+  const [limit, setLimit] = useState(5);
+
+  const walk = () =>
+    setRun(
+      capture(() => {
+        const catalog = new PagedCatalog(CATALOG_PRODUCTS);
+        const iterator =
+          kind === "all" ? catalog.createIterator() : catalog.createInStockIterator();
+
+        const names: string[] = [];
+        // O limite vem primeiro: hasNext() busca a página seguinte, e checá-lo
+        // depois de completar a lista faria uma requisição desnecessária.
+        while (names.length < limit && iterator.hasNext()) names.push(iterator.next().name);
+
+        return [
+          `produtos lidos: ${names.join(", ") || "nenhum"}`,
+          `páginas buscadas: ${catalog.pageRequests} (de 3)`,
+        ].join("\n");
+      }),
+    );
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Choice
+            label="Iterador"
+            value={kind}
+            onChange={setKind}
+            options={[
+              { value: "all", label: "PageIterator" },
+              { value: "stock", label: "InStockIterator" },
+            ]}
+          />
+          <Slider
+            label="Parar depois de"
+            value={limit}
+            onChange={setLimit}
+            min={1}
+            max={5}
+            step={1}
+            unit="itens"
+          />
+          <Action onClick={walk}>Percorrer</Action>
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+function MediatorDemo() {
+  const form = useRef(
+    new CheckoutMediator(
+      25800,
+      new CouponField(),
+      new ShippingSelect(),
+      new TotalLabel(),
+      new PlaceOrderButton(),
+    ),
+  ).current;
+
+  const [logs, setLogs] = useState<string[]>([]);
+  const [, setTick] = useState(0);
+
+  const act = (fn: () => void) => {
+    const run = capture(fn);
+    setLogs(run.logs.map((line) => line.text));
+    setTick((n) => n + 1);
+  };
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Choice
+            label="Cupom digitado"
+            value={form.coupon.code || "none"}
+            onChange={(code) => act(() => form.coupon.type(code === "none" ? "" : code))}
+            options={[
+              { value: "none", label: "nenhum" },
+              { value: "BEMVINDO", label: "BEMVINDO (10%)" },
+              { value: "FRETEGRATIS", label: "FRETEGRATIS" },
+              { value: "NAOEXISTE", label: "NAOEXISTE" },
+            ]}
+          />
+          <Choice
+            label="Frete"
+            value={form.shipping.method}
+            onChange={(method) => act(() => form.shipping.choose(method as ShippingMethod))}
+            options={[
+              { value: "pac", label: "PAC" },
+              { value: "sedex", label: "Sedex" },
+              { value: "retirada", label: "Retirada" },
+            ]}
+          />
+          <Action
+            tone={form.button.enabled ? "primary" : "ghost"}
+            onClick={() => act(() => form.button.click())}
+          >
+            {form.button.enabled ? "Finalizar pedido" : "Finalizar (desabilitado)"}
+          </Action>
+        </>
+      }
+      run={{
+        logs: logs.map((text) => ({ kind: "log" as const, text })),
+        result: [
+          form.total.text || "aguardando",
+          `botão: ${form.button.enabled ? "habilitado" : `desabilitado — ${form.button.reason}`}`,
         ].join("\n"),
       }}
     />
