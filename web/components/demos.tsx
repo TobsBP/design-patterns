@@ -22,6 +22,13 @@ import type { IPaymentProcessor } from "@repo/structural/adapter/src/IPaymentPro
 import { PaypalAdapter } from "@repo/structural/adapter/src/PaypalAdapter";
 
 import { StripeProcessor } from "@repo/structural/adapter/src/StripeProcessor";
+import { Bundle } from "@repo/structural/composite/src/Bundle";
+import { ProductItem } from "@repo/structural/composite/src/ProductItem";
+import { AuditChannel } from "@repo/structural/decorator/src/AuditChannel";
+import { EmailChannel } from "@repo/structural/decorator/src/EmailChannel";
+import type { INotificationChannel } from "@repo/structural/decorator/src/INotificationChannel";
+import { RetryChannel } from "@repo/structural/decorator/src/RetryChannel";
+import { SignedChannel } from "@repo/structural/decorator/src/SignedChannel";
 import { OrderFacade } from "@repo/structural/facade/src/OrderFacade";
 import { CachedReportProxy } from "@repo/structural/proxy/src/CachedReportProxy";
 import { useMemo, useRef, useState } from "react";
@@ -43,6 +50,8 @@ export const DEMOS: Record<string, () => React.ReactElement> = {
   adapter: AdapterDemo,
   proxy: ProxyDemo,
   facade: FacadeDemo,
+  composite: CompositeDemo,
+  decorator: DecoratorDemo,
 };
 
 // ── Comportamentais ─────────────────────────────────────────────
@@ -616,6 +625,132 @@ function FacadeDemo() {
           >
             Repor estoque
           </Action>
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+function CompositeDemo() {
+  const [audio, setAudio] = useState(true);
+  const [mousepads, setMousepads] = useState(2);
+  const [discount, setDiscount] = useState(10);
+
+  const run = useMemo(
+    () =>
+      capture(() => {
+        const kit = new Bundle("Kit Setup Gamer", discount)
+          .add(new ProductItem("Teclado Mecânico", 35000))
+          .add(new ProductItem("Mouse Gamer", 15000));
+
+        if (audio) {
+          kit.add(
+            new Bundle("Combo Áudio", 5)
+              .add(new ProductItem("Headset", 20000))
+              .add(new ProductItem("Suporte de headset", 6000)),
+          );
+        }
+
+        const cart = new Bundle("Carrinho").add(kit);
+        if (mousepads > 0) cart.add(new ProductItem("Mousepad", 4000, mousepads));
+
+        cart.print();
+        return `cart.totalInCents() → ${money(cart.totalInCents())}`;
+      }),
+    [audio, mousepads, discount],
+  );
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Field label="Árvore do carrinho">
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              <Toggle
+                label="combo de áudio (kit dentro do kit)"
+                checked={audio}
+                onChange={setAudio}
+              />
+            </div>
+          </Field>
+          <Slider
+            label="Mousepads"
+            value={mousepads}
+            onChange={setMousepads}
+            min={0}
+            max={5}
+            step={1}
+            unit="un"
+          />
+          <Slider
+            label="Desconto do kit"
+            value={discount}
+            onChange={setDiscount}
+            min={0}
+            max={40}
+            step={5}
+            unit="%"
+          />
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+function DecoratorDemo() {
+  const [run, setRun] = useRun();
+  const [signed, setSigned] = useState(true);
+  const [retry, setRetry] = useState(true);
+  const [audit, setAudit] = useState(true);
+  const [failures, setFailures] = useState(2);
+
+  const send = () =>
+    setRun(
+      capture(() => {
+        let channel: INotificationChannel = new EmailChannel(failures);
+        const layers = ["EmailChannel"];
+
+        if (retry) {
+          channel = new RetryChannel(channel);
+          layers.push("RetryChannel");
+        }
+        if (audit) {
+          channel = new AuditChannel(channel);
+          layers.push("AuditChannel");
+        }
+        if (signed) {
+          channel = new SignedChannel(channel);
+          layers.push("SignedChannel");
+        }
+
+        channel.send("cliente@exemplo.com", "Pedido confirmado.");
+        return layers.reverse().join(" › ");
+      }),
+    );
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Field label="Camadas em volta do EmailChannel">
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              <Toggle label="SignedChannel" checked={signed} onChange={setSigned} />
+              <Toggle label="AuditChannel" checked={audit} onChange={setAudit} />
+              <Toggle label="RetryChannel" checked={retry} onChange={setRetry} />
+            </div>
+          </Field>
+          <Slider
+            label="Falhas do SMTP"
+            value={failures}
+            onChange={setFailures}
+            min={0}
+            max={4}
+            step={1}
+            unit="x"
+          />
+          <Action onClick={send}>Enviar</Action>
         </>
       }
       run={run}

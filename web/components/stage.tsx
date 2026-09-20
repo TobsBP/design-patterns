@@ -58,7 +58,7 @@ function Output({ run }: { run: Run | null }) {
         <p
           // biome-ignore lint/suspicious/noArrayIndexKey: a saída de uma execução não reordena
           key={i}
-          className={`animate-line ${line.kind === "error" ? "text-[#f0806c]" : "text-fg-dim"}`}
+          className={`animate-line whitespace-pre-wrap ${line.kind === "error" ? "text-[#f0806c]" : "text-fg-dim"}`}
           style={{ animationDelay: `${Math.min(i, 8) * 45}ms` }}
         >
           <span aria-hidden className="mr-2 text-[var(--family)]">
