@@ -1,5 +1,14 @@
 "use client";
 
+import { CartHandler } from "@repo/behavioral/chain-of-responsibility/src/CartHandler";
+import { CreditHandler } from "@repo/behavioral/chain-of-responsibility/src/CreditHandler";
+import { FraudHandler } from "@repo/behavioral/chain-of-responsibility/src/FraudHandler";
+import { StockHandler } from "@repo/behavioral/chain-of-responsibility/src/StockHandler";
+import { AddItemCommand } from "@repo/behavioral/command/src/AddItemCommand";
+import { ApplyCouponCommand } from "@repo/behavioral/command/src/ApplyCouponCommand";
+import { Cart } from "@repo/behavioral/command/src/Cart";
+import { CommandBus } from "@repo/behavioral/command/src/CommandBus";
+import { RemoveItemCommand } from "@repo/behavioral/command/src/RemoveItemCommand";
 import { History } from "@repo/behavioral/memento/src/History";
 import { TextEditor } from "@repo/behavioral/memento/src/TextEditor";
 import { AnalyticsObserver } from "@repo/behavioral/observer/src/AnalyticsObserver";
@@ -50,6 +59,8 @@ export const DEMOS: Record<string, () => React.ReactElement> = {
   strategy: StrategyDemo,
   observer: ObserverDemo,
   memento: MementoDemo,
+  "chain-of-responsibility": ChainDemo,
+  command: CommandDemo,
   factory: FactoryDemo,
   builder: BuilderDemo,
   singleton: SingletonDemo,
@@ -242,6 +253,148 @@ function MementoDemo() {
 function createEditor() {
   const editor = new TextEditor();
   return { editor, history: new History(editor) };
+}
+
+function ChainDemo() {
+  const [run, setRun] = useRun();
+  const [sku, setSku] = useState("livro-ddd");
+  const [risk, setRisk] = useState(12);
+  const [amount, setAmount] = useState(24900);
+  const [empty, setEmpty] = useState(false);
+
+  const checkout = () =>
+    setRun(
+      capture(() => {
+        const chain = new CartHandler();
+        chain.setNext(new StockHandler()).setNext(new FraudHandler()).setNext(new CreditHandler());
+
+        const result = chain.handle({
+          customerId: "cus-42",
+          items: empty ? [] : [{ sku, quantity: 1 }],
+          amountInCents: amount,
+          riskScore: risk,
+          creditLimitInCents: 500000,
+        });
+
+        return result.approved
+          ? `aprovado por ${result.by}`
+          : `rejeitado por ${result.by} — ${result.reason}`;
+      }),
+    );
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Choice
+            label="Produto"
+            value={sku}
+            onChange={setSku}
+            options={[
+              { value: "livro-ddd", label: "livro-ddd (3 em estoque)" },
+              { value: "teclado-hhkb", label: "teclado-hhkb (esgotado)" },
+            ]}
+          />
+          <Field label="Carrinho">
+            <Toggle label="enviar vazio" checked={empty} onChange={setEmpty} />
+          </Field>
+          <Slider
+            label="Risco"
+            value={risk}
+            onChange={setRisk}
+            min={0}
+            max={100}
+            step={5}
+            unit="/100"
+          />
+          <Slider
+            label="Valor"
+            value={amount}
+            onChange={setAmount}
+            min={10000}
+            max={900000}
+            step={10000}
+            unit="centavos"
+          />
+          <Action onClick={checkout}>Enviar ao checkout</Action>
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+const ITEMS = {
+  livro: { sku: "livro-ddd", name: "Livro DDD", quantity: 1, unitPriceInCents: 12900 },
+  mousepad: { sku: "mousepad", name: "Mousepad XL", quantity: 1, unitPriceInCents: 4000 },
+};
+
+function CommandDemo() {
+  const objects = useRef({ cart: new Cart(), bus: new CommandBus() }).current;
+  const [view, setView] = useState({ cart: objects.cart.describe(), log: [] as string[] });
+  const [logs, setLogs] = useState<string[]>([]);
+
+  const dispatch = (make: (cart: Cart) => Parameters<CommandBus["run"]>[0] | null) => {
+    const run = capture(() => {
+      const command = make(objects.cart);
+      if (command) objects.bus.run(command);
+    });
+    setLogs((current) => [...current, ...run.logs.map((line) => line.text)].slice(-6));
+    setView({ cart: objects.cart.describe(), log: objects.bus.log });
+  };
+
+  const undo = () => {
+    const run = capture(() => {
+      objects.bus.undo();
+    });
+    setLogs((current) => [...current, ...run.logs.map((line) => line.text)].slice(-6));
+    setView({ cart: objects.cart.describe(), log: objects.bus.log });
+  };
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Field label="Comandos">
+            <div className="flex flex-wrap gap-1.5">
+              <Action
+                tone="ghost"
+                onClick={() => dispatch((cart) => new AddItemCommand(cart, ITEMS.livro))}
+              >
+                adicionar livro
+              </Action>
+              <Action
+                tone="ghost"
+                onClick={() => dispatch((cart) => new AddItemCommand(cart, ITEMS.mousepad))}
+              >
+                adicionar mousepad
+              </Action>
+              <Action
+                tone="ghost"
+                onClick={() => dispatch((cart) => new ApplyCouponCommand(cart, 10))}
+              >
+                cupom de 10%
+              </Action>
+              <Action
+                tone="ghost"
+                onClick={() => dispatch((cart) => new RemoveItemCommand(cart, "livro-ddd", 1))}
+              >
+                remover livro
+              </Action>
+            </div>
+          </Field>
+          <Action onClick={undo}>Desfazer</Action>
+        </>
+      }
+      run={{
+        logs: logs.map((text) => ({ kind: "log" as const, text })),
+        result: [
+          `carrinho: ${view.cart}`,
+          `histórico (${view.log.length}): ${view.log.join(" → ") || "vazio"}`,
+        ].join("\n"),
+      }}
+    />
+  );
 }
 
 // ── Criacionais ─────────────────────────────────────────────────

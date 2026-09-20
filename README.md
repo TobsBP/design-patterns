@@ -36,8 +36,8 @@ Explicam como montar objetos e classes em estruturas maiores, mantendo essas est
 
 Cuidam da comunicação eficiente e da atribuição de responsabilidades entre objetos.
 
-- [ ] Chain of Responsibility — Permite passar pedidos por uma corrente de handlers, onde cada handler decide processar ou passar adiante.
-- [ ] Command — Transforma pedidos em objetos autônomos, permitindo parametrizar, enfileirar ou desfazer operações.
+- [x] [Chain of Responsibility](./behavioral/chain-of-responsibility/) — Permite passar pedidos por uma corrente de handlers, onde cada handler decide processar ou passar adiante.
+- [x] [Command](./behavioral/command/) — Transforma pedidos em objetos autônomos, permitindo parametrizar, enfileirar ou desfazer operações.
 - [ ] Iterator — Permite percorrer elementos de uma coleção sem expor sua representação subjacente.
 - [ ] Mediator — Reduz dependências caóticas entre objetos, restringindo comunicações diretas e forçando colaboração via mediador.
 - [x] [Memento](./behavioral/memento/) — Permite salvar e restaurar o estado anterior de um objeto sem revelar detalhes de sua implementação.
