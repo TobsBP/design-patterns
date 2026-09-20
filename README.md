@@ -49,6 +49,18 @@ Cuidam da comunicação eficiente e da atribuição de responsabilidades entre o
 
 ---
 
+## Visualizador
+
+O diretório [`web/`](./web/) é um app Next.js que lê este repositório e monta um catálogo
+navegável: a explicação de cada padrão, os arquivos que o compõem e uma demonstração que
+executa as próprias classes no navegador.
+
+```bash
+npm install --prefix web && npm run dev --prefix web
+```
+
+---
+
 ## Tecnologias
 
 - **Node.js**

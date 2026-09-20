@@ -1,0 +1,544 @@
+"use client";
+
+import { History } from "@repo/behavioral/memento/src/History";
+import { TextEditor } from "@repo/behavioral/memento/src/TextEditor";
+import { AnalyticsObserver } from "@repo/behavioral/observer/src/AnalyticsObserver";
+import { EmailObserver } from "@repo/behavioral/observer/src/EmailObserver";
+import { InvoiceObserver } from "@repo/behavioral/observer/src/InvoiceObserver";
+import { OrderService } from "@repo/behavioral/observer/src/OrderService";
+import { ExpressShipping } from "@repo/behavioral/strategy/src/ExpressShipping";
+import type { IShippingStrategy } from "@repo/behavioral/strategy/src/IShippingStrategy";
+import { PickupShipping } from "@repo/behavioral/strategy/src/PickupShipping";
+import { ShippingCalculator } from "@repo/behavioral/strategy/src/ShippingCalculator";
+import { StandardShipping } from "@repo/behavioral/strategy/src/StandardShipping";
+import { OrderBuilder } from "@repo/creational/builder/src/OrderBuilder";
+import { NotifierFactory, type NotifierType } from "@repo/creational/factory/src/NotifierFactory";
+import type { IPaymentProcessor } from "@repo/structural/adapter/src/IPaymentProcessor";
+import { PaypalAdapter } from "@repo/structural/adapter/src/PaypalAdapter";
+
+import { StripeProcessor } from "@repo/structural/adapter/src/StripeProcessor";
+import { OrderFacade } from "@repo/structural/facade/src/OrderFacade";
+import { CachedReportProxy } from "@repo/structural/proxy/src/CachedReportProxy";
+import { useMemo, useRef, useState } from "react";
+import { Action, Choice, capture, Field, type Run, Stage, Toggle, useRun } from "./stage";
+
+const money = (cents: number) =>
+  (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+/** Mapa slug → demo. Um padrão sem entrada aqui simplesmente não mostra a seção. */
+export const DEMOS: Record<string, () => React.ReactElement> = {
+  strategy: StrategyDemo,
+  observer: ObserverDemo,
+  memento: MementoDemo,
+  factory: FactoryDemo,
+  builder: BuilderDemo,
+  singleton: SingletonDemo,
+  adapter: AdapterDemo,
+  proxy: ProxyDemo,
+  facade: FacadeDemo,
+};
+
+// ── Comportamentais ─────────────────────────────────────────────
+
+const STRATEGIES: Record<string, () => IShippingStrategy> = {
+  standard: () => new StandardShipping(),
+  express: () => new ExpressShipping(),
+  pickup: () => new PickupShipping(),
+};
+
+function StrategyDemo() {
+  const [kind, setKind] = useState("express");
+  const [weight, setWeight] = useState(800);
+  const [distance, setDistance] = useState(420);
+
+  const quote = useMemo(() => {
+    const calculator = new ShippingCalculator(STRATEGIES[kind]());
+    return calculator.quote({ weightInGrams: weight, distanceInKm: distance });
+  }, [kind, weight, distance]);
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Choice
+            label="Strategy no contexto"
+            value={kind}
+            onChange={setKind}
+            options={[
+              { value: "standard", label: "PAC" },
+              { value: "express", label: "Sedex" },
+              { value: "pickup", label: "Retirada" },
+            ]}
+          />
+          <Slider
+            label="Peso"
+            value={weight}
+            onChange={setWeight}
+            min={100}
+            max={5000}
+            step={100}
+            unit="g"
+          />
+          <Slider
+            label="Distância"
+            value={distance}
+            onChange={setDistance}
+            min={5}
+            max={3000}
+            step={5}
+            unit="km"
+          />
+        </>
+      }
+      run={{
+        logs: [
+          {
+            kind: "log",
+            text: `calculator.quote({ weightInGrams: ${weight}, distanceInKm: ${distance} })`,
+          },
+        ],
+        result: `{ method: '${quote.method}', costInCents: ${quote.costInCents}, days: ${quote.days} }\n${money(quote.costInCents)} · entrega em ${quote.days} ${quote.days === 1 ? "dia" : "dias"}`,
+      }}
+    />
+  );
+}
+
+function ObserverDemo() {
+  const [run, setRun] = useRun();
+  const [active, setActive] = useState({ email: true, invoice: true, analytics: true });
+
+  const confirm = () =>
+    setRun(
+      capture(() => {
+        const service = new OrderService();
+        if (active.email) service.subscribe(new EmailObserver());
+        if (active.invoice) service.subscribe(new InvoiceObserver());
+        if (active.analytics) service.subscribe(new AnalyticsObserver());
+        service.confirm({
+          orderId: `ord-${Math.floor(Math.random() * 900 + 100)}`,
+          customerId: "cus-42",
+          amountInCents: 24900,
+        });
+      }),
+    );
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Field label="Inscritos no OrderService">
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              <Toggle
+                label="EmailObserver"
+                checked={active.email}
+                onChange={(email) => setActive({ ...active, email })}
+              />
+              <Toggle
+                label="InvoiceObserver"
+                checked={active.invoice}
+                onChange={(invoice) => setActive({ ...active, invoice })}
+              />
+              <Toggle
+                label="AnalyticsObserver"
+                checked={active.analytics}
+                onChange={(analytics) => setActive({ ...active, analytics })}
+              />
+            </div>
+          </Field>
+          <Action onClick={confirm}>Confirmar pedido</Action>
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+function MementoDemo() {
+  // O editor e o histórico são os objetos do padrão; o estado do React guarda só o
+  // que a tela mostra — mutar dentro do updater executaria duas vezes em dev.
+  const objects = useRef(createEditor()).current;
+  const [view, setView] = useState({ content: "", saves: 0 });
+
+  const act = (fn: (editor: TextEditor, history: History) => void) => {
+    const { editor, history } = objects;
+    fn(editor, history);
+    setView({ content: editor.read(), saves: history.size });
+  };
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Field label="Editor">
+            <div className="flex flex-wrap gap-1.5">
+              {["Padrões ", "de projeto ", "em TypeScript"].map((word) => (
+                <Action
+                  key={word}
+                  tone="ghost"
+                  onClick={() =>
+                    act((editor, history) => {
+                      history.backup();
+                      editor.type(word);
+                    })
+                  }
+                >
+                  digitar “{word.trim()}”
+                </Action>
+              ))}
+            </div>
+          </Field>
+          <Field label="Histórico">
+            <div className="flex gap-1.5">
+              <Action onClick={() => act((_, history) => void history.undo())}>Desfazer</Action>
+              <Action
+                tone="ghost"
+                onClick={() =>
+                  act((editor, history) => {
+                    history.backup();
+                    editor.backspace(editor.read().length);
+                  })
+                }
+              >
+                Apagar tudo
+              </Action>
+            </div>
+          </Field>
+        </>
+      }
+      run={{
+        logs: [{ kind: "log", text: `history.size → ${view.saves} snapshot(s) guardados` }],
+        result: view.content ? `"${view.content}"` : '"" (editor vazio)',
+      }}
+    />
+  );
+}
+
+function createEditor() {
+  const editor = new TextEditor();
+  return { editor, history: new History(editor) };
+}
+
+// ── Criacionais ─────────────────────────────────────────────────
+
+function FactoryDemo() {
+  const [run, setRun] = useRun();
+  const [type, setType] = useState<NotifierType>("email");
+
+  const send = () =>
+    setRun(
+      capture(() => {
+        const notifier = NotifierFactory.create(type);
+        notifier.send("tobias@exemplo.com", "Seu pedido saiu para entrega.");
+        return `NotifierFactory.create('${type}') → ${notifier.constructor.name}`;
+      }),
+    );
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Choice
+            label="Tipo pedido à factory"
+            value={type}
+            onChange={setType}
+            options={[
+              { value: "email", label: "email" },
+              { value: "sms", label: "sms" },
+              { value: "push", label: "push" },
+            ]}
+          />
+          <Action onClick={send}>Enviar notificação</Action>
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+function BuilderDemo() {
+  const [gift, setGift] = useState(false);
+  const [discount, setDiscount] = useState(false);
+  const [notes, setNotes] = useState(false);
+  const [extraItem, setExtraItem] = useState(false);
+
+  const order = useMemo(() => {
+    const builder = new OrderBuilder()
+      .setCustomer("cus-42")
+      .addItem("prod-001", "Teclado Mecânico", 1, 350)
+      .setShippingAddress("Av. Paulista, 1000", "São Paulo", "SP", "01310-100")
+      .setPaymentMethod("pix");
+
+    if (extraItem) builder.addItem("prod-002", "Mouse Gamer", 2, 150);
+    if (discount) builder.applyDiscount(10);
+    if (gift) builder.addGiftWrapping();
+    if (notes) builder.addNotes("Parabéns pelo aniversário!");
+
+    return builder.build();
+  }, [gift, discount, notes, extraItem]);
+
+  const chain = [
+    ".setCustomer('cus-42')",
+    ".addItem('prod-001', 'Teclado Mecânico', 1, 350)",
+    extraItem && ".addItem('prod-002', 'Mouse Gamer', 2, 150)",
+    ".setShippingAddress(…)",
+    ".setPaymentMethod('pix')",
+    discount && ".applyDiscount(10)",
+    gift && ".addGiftWrapping()",
+    notes && ".addNotes('Parabéns pelo aniversário!')",
+    ".build()",
+  ].filter(Boolean) as string[];
+
+  return (
+    <Stage
+      controls={
+        <Field label="Passos opcionais do builder">
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <Toggle label="segundo item" checked={extraItem} onChange={setExtraItem} />
+            <Toggle label="desconto de 10%" checked={discount} onChange={setDiscount} />
+            <Toggle label="embrulho para presente" checked={gift} onChange={setGift} />
+            <Toggle label="observação" checked={notes} onChange={setNotes} />
+          </div>
+        </Field>
+      }
+      run={{
+        logs: [
+          { kind: "log", text: "new OrderBuilder()" },
+          ...chain.map((text) => ({ kind: "log" as const, text: `  ${text}` })),
+        ],
+        result: [
+          `itens: ${order.items.length}`,
+          `subtotal: ${money(order.subtotal * 100)}`,
+          `desconto: ${money(order.discount * 100)}`,
+          `total: ${money(order.total * 100)}`,
+          `presente: ${order.giftWrapping ? "sim" : "não"}`,
+          order.notes ? `observação: ${order.notes}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      }}
+    />
+  );
+}
+
+/**
+ * ponytail: espelho local de creational/singleton/lib/db.ts — o arquivo real
+ * abre uma conexão Supabase, que não roda no navegador. A mecânica (construtor
+ * privado + getInstance com cache estático) é idêntica.
+ */
+class Database {
+  private static instance: Database;
+  readonly id = `conn_${Math.random().toString(36).slice(2, 8)}`;
+  private constructor() {
+    console.log(`[Database] conexão aberta (${this.id})`);
+  }
+  static getInstance(): Database {
+    if (!Database.instance) Database.instance = new Database();
+    return Database.instance;
+  }
+}
+
+function SingletonDemo() {
+  const [run, setRun] = useState<Run | null>(null);
+  const [calls, setCalls] = useState(0);
+
+  const request = () => {
+    setCalls((n) => n + 1);
+    setRun(
+      capture(() => {
+        const db = Database.getInstance();
+        return `Database.getInstance() → ${db.id}`;
+      }),
+    );
+  };
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Action onClick={request}>Pedir a instância</Action>
+          <Field label="Chamadas">
+            <span className="font-mono text-sm text-fg">{calls}</span>
+          </Field>
+        </>
+      }
+      run={
+        run && {
+          ...run,
+          logs: run.logs.length
+            ? run.logs
+            : [{ kind: "log", text: "instância já existia — nenhuma conexão nova foi aberta" }],
+        }
+      }
+    />
+  );
+}
+
+// ── Estruturais ─────────────────────────────────────────────────
+
+function AdapterDemo() {
+  const [run, setRun] = useRun();
+  const [gateway, setGateway] = useState("paypal");
+  const [currency, setCurrency] = useState("BRL");
+
+  const pay = () =>
+    setRun(
+      capture(() => {
+        const processor: IPaymentProcessor =
+          gateway === "stripe" ? new StripeProcessor() : new PaypalAdapter();
+        processor.pay(24900, currency);
+        return `O cliente chamou pay(24900, '${currency}') sem saber qual gateway está por trás.`;
+      }),
+    );
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Choice
+            label="Implementação de IPaymentProcessor"
+            value={gateway}
+            onChange={setGateway}
+            options={[
+              { value: "stripe", label: "StripeProcessor" },
+              { value: "paypal", label: "PaypalAdapter" },
+            ]}
+          />
+          <Choice
+            label="Moeda"
+            value={currency}
+            onChange={setCurrency}
+            options={[
+              { value: "BRL", label: "BRL" },
+              { value: "USD", label: "USD" },
+              { value: "JPY", label: "JPY" },
+            ]}
+          />
+          <Action onClick={pay}>Cobrar R$ 249,00</Action>
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+function ProxyDemo() {
+  const [run, setRun] = useRun();
+  const [proxy, setProxy] = useState(() => new CachedReportProxy());
+
+  const generate = (month: string) => setRun(capture(() => proxy.generate(month)));
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Field label="Pedir relatório de">
+            <div className="flex flex-wrap gap-1.5">
+              {["2025-01", "2025-02", "2025-03"].map((month) => (
+                <Action key={month} tone="ghost" onClick={() => generate(month)}>
+                  {month}
+                </Action>
+              ))}
+            </div>
+          </Field>
+          <Action
+            onClick={() => {
+              setProxy(new CachedReportProxy());
+              setRun({
+                logs: [
+                  { kind: "log", text: "novo proxy — cache vazio e serviço ainda não criado" },
+                ],
+              });
+            }}
+          >
+            Recomeçar
+          </Action>
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+function FacadeDemo() {
+  const [run, setRun] = useRun();
+  const [sku, setSku] = useState("livro-ddd");
+  const [facade, setFacade] = useState(() => new OrderFacade());
+
+  const place = () =>
+    setRun(
+      capture(() => {
+        const tracking = facade.placeOrder({
+          customerId: "cus-42",
+          sku,
+          quantity: 1,
+          amountInCents: 24900,
+          address: "Av. Paulista, 1000",
+        });
+        return `placeOrder(…) → ${tracking}`;
+      }),
+    );
+
+  return (
+    <Stage
+      controls={
+        <>
+          <Choice
+            label="Produto"
+            value={sku}
+            onChange={setSku}
+            options={[
+              { value: "livro-ddd", label: "livro-ddd (3 em estoque)" },
+              { value: "teclado-hhkb", label: "teclado-hhkb (esgotado)" },
+            ]}
+          />
+          <Action onClick={place}>Fazer pedido</Action>
+          <Action
+            tone="ghost"
+            onClick={() => {
+              setFacade(new OrderFacade());
+              setRun({ logs: [{ kind: "log", text: "estoque reposto" }] });
+            }}
+          >
+            Repor estoque
+          </Action>
+        </>
+      }
+      run={run}
+    />
+  );
+}
+
+// ── Controles auxiliares ────────────────────────────────────────
+
+function Slider({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  step,
+  unit,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+}) {
+  return (
+    <Field label={`${label} · ${value.toLocaleString("pt-BR")} ${unit}`}>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        aria-label={label}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="h-1 w-44 cursor-pointer appearance-none rounded-full bg-line accent-[var(--family)]"
+      />
+    </Field>
+  );
+}
